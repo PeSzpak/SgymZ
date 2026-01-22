@@ -16,6 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "SGYMZ - Seu Treino Personalizado",
   description: "Sistema de gerenciamento de treinos personalizado",
+  icons: {
+    icon: [
+      { url: '/batmanlogo.png', type: 'image/png' },
+    ],
+  },
 };
 
 export default function RootLayout({

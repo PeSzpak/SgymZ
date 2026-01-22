@@ -6,7 +6,7 @@ import type { ThemePreference } from "@/types/database";
 
 interface ThemeContextType {
   theme: ThemePreference;
-  setTheme: (theme: ThemePreference) => Promise<void>;
+  setTheme: (theme: ThemePreference) => void;
   isLoading: boolean;
 }
 
@@ -17,9 +17,28 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
 
+  // Função para aplicar tema no DOM
+  const applyTheme = (newTheme: ThemePreference) => {
+    if (newTheme === "hellokitty") {
+      document.documentElement.setAttribute("data-theme", "hellokitty");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+  };
+
+  // Carrega tema inicial
   useEffect(() => {
     const loadTheme = async () => {
       try {
+        // Primeiro tenta carregar do localStorage (para usuários não logados)
+        const preferredTheme = localStorage.getItem("preferred-theme") as ThemePreference | null;
+        
+        if (preferredTheme && (preferredTheme === "batman" || preferredTheme === "hellokitty")) {
+          setThemeState(preferredTheme);
+          applyTheme(preferredTheme);
+        }
+
+        // Depois tenta carregar do banco de dados (para usuários logados)
         const {
           data: { user },
         } = await supabase.auth.getUser();
@@ -34,6 +53,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           if (data?.theme_preference) {
             setThemeState(data.theme_preference);
             applyTheme(data.theme_preference);
+            localStorage.setItem("preferred-theme", data.theme_preference);
           }
         }
       } catch (error) {
@@ -46,33 +66,43 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     loadTheme();
   }, [supabase]);
 
-  const applyTheme = (newTheme: ThemePreference) => {
-    if (newTheme === "hellokitty") {
-      document.documentElement.setAttribute("data-theme", "hellokitty");
-    } else {
-      document.documentElement.removeAttribute("data-theme");
-    }
-  };
+  // Escuta mudanças no localStorage (para detectar mudanças de outras abas/páginas)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "preferred-theme" && e.newValue) {
+        const newTheme = e.newValue as ThemePreference;
+        if (newTheme === "batman" || newTheme === "hellokitty") {
+          setThemeState(newTheme);
+          applyTheme(newTheme);
+        }
+      }
+    };
 
-  const setTheme = async (newTheme: ThemePreference) => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
+  // Função para mudar tema (síncrona e assíncrona)
+  const setTheme = (newTheme: ThemePreference) => {
+    // Atualiza imediatamente no estado e DOM
+    setThemeState(newTheme);
+    applyTheme(newTheme);
+    localStorage.setItem("preferred-theme", newTheme);
+
+    // Atualiza no banco de forma assíncrona (sem bloquear)
+    supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
-        await supabase
+        supabase
           .from("users")
           .update({ theme_preference: newTheme })
-          .eq("id", user.id);
-
-        setThemeState(newTheme);
-        applyTheme(newTheme);
+          .eq("id", user.id)
+          .then(({ error }) => {
+            if (error) {
+              console.error("Erro ao atualizar tema no banco:", error);
+            }
+          });
       }
-    } catch (error) {
-      console.error("Erro ao atualizar tema:", error);
-      throw error;
-    }
+    });
   };
 
   return (
