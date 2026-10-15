@@ -1,121 +1,82 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { ThemePreference } from "@/types/database";
 
 interface ThemeContextType {
   theme: ThemePreference;
-  setTheme: (theme: ThemePreference) => void;
-  isLoading: boolean;
+  setTheme: (theme: ThemePreference, options?: { persist?: boolean }) => void;
+  toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const STORAGE_KEY = "preferred-theme";
+
+function applyTheme(theme: ThemePreference) {
+  if (theme === "hellokitty") {
+    document.documentElement.setAttribute("data-theme", "hellokitty");
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", theme === "hellokitty" ? "#fff0f4" : "#0e0f12");
+}
+
+function isTheme(value: unknown): value is ThemePreference {
+  return value === "batman" || value === "hellokitty";
+}
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemePreference>("batman");
-  const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
 
-  // Função para aplicar tema no DOM
-  const applyTheme = (newTheme: ThemePreference) => {
-    if (newTheme === "hellokitty") {
-      document.documentElement.setAttribute("data-theme", "hellokitty");
-    } else {
-      document.documentElement.removeAttribute("data-theme");
+  // O script no <head> já aplicou o tema salvo; aqui só sincronizamos o estado
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (isTheme(saved)) {
+        setThemeState(saved);
+        applyTheme(saved);
+      }
+    } catch {
+      // armazenamento indisponível (aba privada): segue com o padrão
     }
-  };
 
-  // Carrega tema inicial
-  useEffect(() => {
-    const loadTheme = async () => {
-      try {
-        // Primeiro tenta carregar do localStorage (para usuários não logados)
-        const preferredTheme = localStorage.getItem("preferred-theme") as ThemePreference | null;
-        
-        if (preferredTheme && (preferredTheme === "batman" || preferredTheme === "hellokitty")) {
-          setThemeState(preferredTheme);
-          applyTheme(preferredTheme);
-        }
-
-        // Depois tenta carregar do banco de dados (para usuários logados)
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (user) {
-          const { data } = await supabase
-            .from("users")
-            .select("theme_preference")
-            .eq("id", user.id)
-            .single();
-
-          if (data?.theme_preference) {
-            setThemeState(data.theme_preference);
-            applyTheme(data.theme_preference);
-            localStorage.setItem("preferred-theme", data.theme_preference);
-          }
-        }
-      } catch (error) {
-        console.error("Erro ao carregar tema:", error);
-      } finally {
-        setIsLoading(false);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && isTheme(e.newValue)) {
+        setThemeState(e.newValue);
+        applyTheme(e.newValue);
       }
     };
-
-    loadTheme();
-  }, [supabase]);
-
-  // Escuta mudanças no localStorage (para detectar mudanças de outras abas/páginas)
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "preferred-theme" && e.newValue) {
-        const newTheme = e.newValue as ThemePreference;
-        if (newTheme === "batman" || newTheme === "hellokitty") {
-          setThemeState(newTheme);
-          applyTheme(newTheme);
-        }
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  // Função para mudar tema (síncrona e assíncrona)
-  const setTheme = (newTheme: ThemePreference) => {
-    // Atualiza imediatamente no estado e DOM
-    setThemeState(newTheme);
-    applyTheme(newTheme);
-    localStorage.setItem("preferred-theme", newTheme);
+  const setTheme = useCallback((next: ThemePreference, options?: { persist?: boolean }) => {
+    setThemeState(next);
+    applyTheme(next);
+    try {
+      localStorage.setItem(STORAGE_KEY, next);
+    } catch {}
 
-    // Atualiza no banco de forma assíncrona (sem bloquear)
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        supabase
-          .from("users")
-          .update({ theme_preference: newTheme })
-          .eq("id", user.id)
-          .then(({ error }) => {
-            if (error) {
-              console.error("Erro ao atualizar tema no banco:", error);
-            }
-          });
-      }
+    if (options?.persist === false) return;
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return;
+      supabase.from("users").update({ theme_preference: next }).eq("id", session.user.id).then();
     });
-  };
+  }, []);
 
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme, isLoading }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === "batman" ? "hellokitty" : "batman");
+  }, [theme, setTheme]);
+
+  return <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {
   const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error("useTheme deve ser usado dentro de um ThemeProvider");
-  }
+  if (!context) throw new Error("useTheme deve ser usado dentro de um ThemeProvider");
   return context;
 }
