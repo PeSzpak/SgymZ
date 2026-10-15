@@ -1,11 +1,15 @@
 import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+let client: SupabaseClient | undefined;
 
 /**
- * Cliente Supabase para uso no lado do cliente (Client Components)
+ * Cliente Supabase para Client Components (uma instância por aba)
  */
 export function createClient() {
-  return createBrowserClient(
+  client ??= createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
+  return client;
 }

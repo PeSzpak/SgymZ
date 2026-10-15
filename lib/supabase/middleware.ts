@@ -37,23 +37,22 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Rotas públicas que não precisam de autenticação
-  const publicRoutes = ["/login", "/register"];
-  const isPublicRoute = publicRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
-  );
+  const path = request.nextUrl.pathname;
+  const authRoutes = ["/login", "/register", "/admin/login", "/admin/register"];
+  const isAuthRoute = authRoutes.includes(path);
+  const isPublic = path === "/" || isAuthRoute || path === "/manifest.webmanifest";
 
-  // Redirecionar para login se não estiver autenticado e tentando acessar rota protegida
-  if (!user && !isPublicRoute) {
+  // Sem sessão em rota protegida: vai para o login certo (admin ou aluna)
+  if (!user && !isPublic) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = path.startsWith("/admin") ? "/admin/login" : "/login";
     return NextResponse.redirect(url);
   }
 
-  // Redirecionar para dashboard se já estiver autenticado e tentando acessar login/register
-  if (user && isPublicRoute) {
+  // Já logado abrindo login/cadastro: segue direto para o painel
+  if (user && isAuthRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = path.startsWith("/admin") ? "/admin/dashboard" : "/dashboard";
     return NextResponse.redirect(url);
   }
 
