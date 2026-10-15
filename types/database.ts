@@ -1,49 +1,41 @@
-// Tipos de enums do banco de dados
+// Tipos espelhando supabase/setup.sql
 export type UserStatus = "pending" | "approved" | "rejected";
 export type ThemePreference = "batman" | "hellokitty";
-export type NotificationType =
-  | "new_user"
-  | "program_assigned"
-  | "program_updated"
-  | "change_request";
 export type SetType = "warmup" | "prep" | "working";
 export type ChangeRequestStatus = "pending" | "resolved";
 
-// Tipo do usuário estendido
 export interface User {
   id: string;
   email: string;
   full_name: string;
   is_admin: boolean;
   status: UserStatus;
-  created_at: string;
   theme_preference: ThemePreference;
+  weekly_goal: number;
+  created_at: string;
 }
 
-// Tipo de exercício
 export interface Exercise {
   id: string;
   name: string;
-  muscle_group?: string;
-  equipment?: string;
-  notes?: string;
-  created_by: string;
+  muscle_group: string | null;
+  equipment: string | null;
+  notes: string | null;
+  created_by: string | null;
   is_default: boolean;
   created_at: string;
   updated_at: string;
 }
 
-// Tipo de programa de treino
 export interface WorkoutProgram {
   id: string;
   name: string;
-  description?: string;
-  created_by: string;
+  description: string | null;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
 }
 
-// Tipo de treino individual
 export interface Workout {
   id: string;
   program_id: string;
@@ -53,78 +45,78 @@ export interface Workout {
   updated_at: string;
 }
 
-// Tipo de exercício dentro de um treino
 export interface WorkoutExercise {
   id: string;
   workout_id: string;
   exercise_id: string;
   order_index: number;
-  warmup_sets?: number;
-  prep_sets?: number;
-  working_sets?: number;
+  warmup_sets: number;
+  prep_sets: number;
+  working_sets: number;
   reps: string;
-  rest_time: string;
-  notes?: string;
+  rest_seconds: number;
+  notes: string | null;
   created_at: string;
-  exercise?: Exercise; // Para joins
+  exercise?: Exercise;
 }
 
-// Tipo de atribuição de programa
 export interface UserProgram {
   id: string;
   user_id: string;
   program_id: string;
-  assigned_by: string;
+  assigned_by: string | null;
   assigned_at: string;
   is_active: boolean;
-  program?: WorkoutProgram; // Para joins
+  program?: WorkoutProgram;
 }
 
-// Tipo de log de treino
 export interface WorkoutLog {
   id: string;
   user_id: string;
-  workout_id: string;
+  workout_id: string | null;
+  program_id: string | null;
+  workout_name: string;
+  started_at: string | null;
   completed_at: string;
-  difficulty_rating: number;
-  notes?: string;
+  duration_seconds: number | null;
+  difficulty_rating: number | null;
+  notes: string | null;
   created_at: string;
-  workout?: Workout; // Para joins
+  exercise_logs?: ExerciseLog[];
 }
 
-// Tipo de log de exercício
 export interface ExerciseLog {
   id: string;
   workout_log_id: string;
-  workout_exercise_id: string;
+  workout_exercise_id: string | null;
+  exercise_id: string | null;
+  exercise_name: string;
   set_type: SetType;
   set_number: number;
   weight: number;
-  reps_completed: number;
-  notes?: string;
-}
-
-// Tipo de notificação
-export interface Notification {
-  id: string;
-  user_id: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  is_read: boolean;
-  related_id?: string;
+  reps: number;
   created_at: string;
 }
 
-// Tipo de solicitação de alteração
 export interface ChangeRequest {
   id: string;
   user_id: string;
-  workout_id?: string;
+  workout_id: string | null;
   message: string;
   status: ChangeRequestStatus;
+  admin_response: string | null;
   created_at: string;
-  resolved_at?: string;
-  user?: User; // Para joins
-  workout?: Workout; // Para joins
+  resolved_at: string | null;
+  user?: Pick<User, "full_name" | "email">;
+  workout?: Pick<Workout, "name"> | null;
+}
+
+/** Treino com os exercícios já ordenados */
+export interface WorkoutWithExercises extends Workout {
+  workout_exercises: WorkoutExercise[];
+}
+
+/** Programa completo, como o editor e a tela de treino usam */
+export interface ProgramWithWorkouts extends WorkoutProgram {
+  workouts: WorkoutWithExercises[];
 }
