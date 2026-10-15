@@ -1,176 +1,60 @@
-# SGYMZ - Sistema de Gerenciamento de Treinos
+# SGYMZ
 
-Sistema completo de gerenciamento de treinos personalizados com suporte a múltiplos administradores e usuários.
+App de treinos com dois temas: **Hello Kitty** (rosa, para quem treina) e **Batman** (escuro e dourado, para o admin). Feito para usar no celular, dentro da academia.
 
-## 🚀 Funcionalidades
+## O que dá para fazer
 
-- ✅ **Autenticação separada**: Logins distintos para admin e usuários
-- ✅ **Auto-login pós-cadastro**: Após registrar, entra direto no sistema
-- ✅ **Primeiro usuário = Admin**: O primeiro a se cadastrar vira admin automaticamente
-- ✅ **Múltiplos admins**: Suporte para vários administradores
-- ✅ **Temas personalizáveis**: Batman (escuro/dourado) e Hello Kitty (rosa)
-- ✅ **Row Level Security**: Segurança em nível de linha no banco de dados
-- ✅ **Sistema de aprovação**: Admins podem aprovar/rejeitar usuários
+**Quem treina**
+- Tela *Hoje* com o próximo treino da rotação (A → B → C), meta semanal em anel e sequência de semanas
+- Modo treino: séries de aquecimento, preparação e válidas, carga e repetições já preenchidas com o último treino, timer de descanso com bipe e vibração, tela sempre acesa e progresso salvo no aparelho (dá para fechar o app e continuar)
+- Finalização com nota do treino, anotações, resumo, confete e aviso de quais exercícios subiram de carga
+- Histórico com calendário do mês e gráfico de evolução de carga por exercício
+- Montar os próprios programas (em branco ou de um modelo pronto), copiar um programa do admin para personalizar e pedir ajustes ao admin
+- Troca de tema a qualquer momento; instalável como app (Adicionar à Tela de Início)
 
-## 📦 Stack Tecnológica
+**Admin**
+- Painel com alunos, treinos recentes e pedidos pendentes
+- Atribuir programas, ver histórico e evolução de cada aluno, bloquear acesso e promover a admin
+- Biblioteca de exercícios (50 exercícios em português já vêm cadastrados)
+- Responder pedidos de ajuste
 
-- **Framework**: Next.js 16.1.3 (App Router + Turbopack)
-- **Banco de dados**: Supabase (PostgreSQL + Auth + RLS)
-- **Estilização**: Tailwind CSS 4.0
-- **Validação**: Zod + React Hook Form
-- **UI Components**: Componentes customizados com class-variance-authority
-- **Icons**: Lucide React
-- **Package Manager**: Bun
+## Rodando
 
-## 🗂️ Estrutura do Projeto
-
-\`\`\`
-/app
-  page.tsx                    # Tela inicial (escolher admin ou usuário)
-  /login                      # Login de usuário normal
-  /register                   # Cadastro de usuário normal
-  /dashboard                  # Dashboard de usuário normal
-  /admin
-    /login                    # Login de admin
-    /register                 # Cadastro de admin
-    /dashboard                # Dashboard de admin
-/components/ui                # Componentes reutilizáveis
-/lib
-  /supabase                   # Clientes Supabase (server, client, middleware)
-  /validations                # Schemas Zod
-/hooks
-  use-theme.tsx               # Hook de gerenciamento de tema
-/supabase
-  01_reset.sql                # Script para resetar banco
-  02_schema.sql               # Schema completo do banco
-  03_policies.sql             # Políticas RLS
-/types
-  database.ts                 # Tipos TypeScript
-\`\`\`
-
-## 🛠️ Configuração do Banco de Dados
-
-### Passo 1: Resetar o banco (CUIDADO: deleta tudo!)
-
-Abra o SQL Editor no Supabase e execute:
-
-\`\`\`sql
--- Copie e cole o conteúdo de 01_reset.sql
-\`\`\`
-
-### Passo 2: Criar o schema
-
-\`\`\`sql
--- Copie e cole o conteúdo de 02_schema.sql
-\`\`\`
-
-### Passo 3: Aplicar policies
-
-\`\`\`sql
--- Copie e cole o conteúdo de 03_policies.sql
-\`\`\`
-
-## 🎯 Fluxo de Uso
-
-### Primeiro Acesso (Admin)
-1. Acesse a tela inicial
-2. Clique em "Sou Administrador"
-3. Clique em "Cadastre-se"
-4. Preencha os dados
-5. **Você é automaticamente o primeiro admin e entra direto no sistema**
-
-### Cadastro de Usuário Normal
-1. Acesse a tela inicial
-2. Clique em "Sou Usuário"
-3. Clique em "Cadastre-se"
-4. Preencha os dados
-5. **Entra direto no dashboard após cadastro**
-
-### Cadastro de Novos Admins
-1. Acesse `/admin/register`
-2. Preencha os dados
-3. **Primeiro admin é aprovado automaticamente**
-4. **Demais admins: precisam ser aprovados por outro admin (futuro)**
-
-## 🎨 Temas
-
-### Batman Theme
-- Background escuro (#0a0a0a)
-- Acentos dourados (#d4af37)
-- Visual minimalista e profissional
-
-### Hello Kitty Theme
-- Background rosa claro (#fce7f3)
-- Acentos rosa (#ec4899)
-- Bordas arredondadas e visual fofo
-
-## 🔒 Segurança
-
-- **RLS habilitado**: Todas as tabelas protegidas
-- **Políticas separadas**: Admins e usuários têm permissões distintas
-- **Validação de rotas**: Middleware protege rotas sensíveis
-- **Senhas seguras**: Mínimo 6 caracteres
-- **Email único**: Sistema não permite emails duplicados
-
-## 🚦 Status de Usuários
-
-- **approved**: Pode usar o sistema normalmente
-- **pending**: Aguardando aprovação (não pode logar)
-- **rejected**: Rejeitado (não pode logar)
-
-## 📝 Tabelas do Banco
-
-1. **users**: Dados dos usuários + flag is_admin
-2. **exercises**: Exercícios cadastrados
-3. **workout_programs**: Programas de treino
-4. **workouts**: Treinos individuais
-5. **workout_exercises**: Exercícios dentro de treinos
-6. **user_programs**: Atribuição de programas aos usuários
-7. **workout_logs**: Registro de treinos executados
-8. **exercise_logs**: Detalhes de cada série executada
-9. **notifications**: Sistema de notificações
-10. **change_requests**: Solicitações de alteração de treino
-
-## 🔧 Desenvolvimento
-
-\`\`\`bash
-# Instalar dependências
+```bash
 bun install
-
-# Rodar em desenvolvimento
+cp .env.example .env.local   # preencha com a URL e a anon key do Supabase
 bun dev
+```
 
-# Build para produção
-bun build
+### Banco (uma vez)
 
-# Iniciar produção
-bun start
-\`\`\`
+1. No Supabase, abra **SQL Editor** e rode todo o arquivo [`supabase/setup.sql`](supabase/setup.sql).
+   Ele recria as tabelas, as políticas RLS, os gatilhos e a biblioteca de exercícios.
+   As contas de login existentes são mantidas.
+2. Em **Authentication → Sign In / Providers → Email**, desligue **Confirm email** para entrar direto depois do cadastro.
+3. Confira com `bun test-supabase.js`.
 
-## 📌 Variáveis de Ambiente
+O **primeiro cadastro** do sistema vira admin. Os demais entram como alunos e podem ser promovidos no painel.
 
-Crie um arquivo \`.env.local\`:
+## Stack
 
-\`\`\`env
-NEXT_PUBLIC_SUPABASE_URL=seu_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_anon_key
-\`\`\`
+Next.js 16 (App Router), React 19, Tailwind CSS 4, Supabase (Auth + Postgres + RLS), Zod e React Hook Form, Lucide.
 
-## 🎓 Próximos Passos
+## Estrutura
 
-- [ ] Interface de aprovação de usuários para admins
-- [ ] CRUD completo de exercícios
-- [ ] Criação de programas de treino
-- [ ] Atribuição de programas aos usuários
-- [ ] Registro de execução de treinos
-- [ ] Dashboard com estatísticas e gráficos
-- [ ] Sistema de notificações em tempo real
-- [ ] Solicitações de alteração de treino
+```
+app/
+  page.tsx                  escolha entre "Vim treinar" e "Painel do admin"
+  login, register           entrada de quem treina
+  (app)/                    área de quem treina: dashboard, treinos, historico, perfil
+  (focus)/treino/[id]       modo treino em tela cheia
+  admin/login, register     entrada do admin
+  admin/(panel)/            painel: dashboard, usuarios, programas, exercicios, pedidos
+components/                 shell, editor de programa, histórico, seletor de exercícios
+components/ui/              botão, cartão, campos, stepper, sheet, toast...
+lib/data.ts                 todas as consultas ao Supabase
+lib/templates.ts            modelos prontos de programa
+supabase/setup.sql          schema completo
+```
 
-## 📄 Licença
-
-Projeto privado - Todos os direitos reservados
-
----
-
-Desenvolvido com ❤️ usando Next.js + Supabase
+Os temas são tokens CSS em `app/globals.css`. A variante `kitty:` do Tailwind aplica estilos só no tema Hello Kitty.
